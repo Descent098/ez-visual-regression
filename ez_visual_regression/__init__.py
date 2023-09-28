@@ -12,3 +12,5 @@ If you have a submodule folder called /foo, with a module inside called bar.py y
     If you don't do this python won't find the contents of the files inside the submodule folder.
 
 """
+
+__version__ = "0.1.0"

@@ -1,5 +1,6 @@
 """Contains all the configuration for the package on pip"""
 import setuptools
+from ez_visual_regression import __version__
 
 def get_content(*filename:str) -> str:
     """ Gets the content of a file or files and returns
@@ -22,21 +23,20 @@ def get_content(*filename:str) -> str:
     return content
 
 setuptools.setup(
-    name = "", # TODO: Give the package a name
-    version = "0.0.1", # I recommend every 2nd decimal release (i.e. 0.x.0) for big releases and 3rd (i.e. 0.0.x) for bug fixes.
-    author = "", # TODO: Add your name
-    author_email = "", # TODO: Add your email
-    description = "", # TODO: Give the package a description
+    name = "ez_visual_regression",
+    version = __version__,
+    author = "Kieran Wood",
+    author_email = "kieran@canadiancoding.ca",
+    description = "Used to take screenshots with selenium (pages or elements) and compare to baseline",
     long_description = get_content("README.md", "CHANGELOG.md"),
     long_description_content_type = "text/markdown",
-    # Replace https://github.com/canadian-coding/python-package-template with your repo github URL 
     project_urls = {
-        "User Docs" :      "", # TODO: Fill out or remove
-        "API Docs"  :      "", # TODO: Fill out or remove
-        "Source" :         "https://github.com/canadian-coding/python-package-template",
-        "Bug Report":      "https://github.com/canadian-coding/python-package-template/issues/new?assignees=Descent098&labels=bug&template=bug_report.md&title=%5BBUG%5D",
-        "Feature Request": "https://github.com/canadian-coding/python-package-template/issues/new?labels=enhancement&template=feature_request.md&title=%5BFeature%5D",
-        "Roadmap":         "https://github.com/canadian-coding/python-package-template/projects"
+        "User Docs" :      "https://kieranwood.ca/ez-visual-regression",
+        "API Docs"  :      "https://ez-visual-regression.readthedocs.io",
+        "Source" :         "https://github.com/Descent098/ez-visual-regression",
+        "Bug Report":      "https://github.com/Descent098/ez-visual-regression/issues/new?assignees=Descent098&labels=bug&template=bug_report.md&title=%5BBUG%5D",
+        "Feature Request": "https://github.com/Descent098/ez-visual-regression/issues/new?labels=enhancement&template=feature_request.md&title=%5BFeature%5D",
+        "Roadmap":         "https://github.com/Descent098/ez-visual-regression/projects"
     },
     include_package_data = True,
     packages = setuptools.find_packages(),
@@ -51,7 +51,11 @@ setuptools.setup(
     
 
     install_requires = [
-    "docopt", # Used for argument parsing if you are writing a CLI
+    "docopt",
+    "ez_img_diff",
+    "selenium",
+    "webdriver_manager",
+    "pyyaml",
         ],
     extras_require = {
         "dev" : ["nox",    # Used to run automated processes
