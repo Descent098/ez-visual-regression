@@ -60,7 +60,8 @@ setuptools.setup(
     extras_require = {
         "dev" : ["nox",    # Used to run automated processes
                 "pytest",  # Used to run the test code in the tests directory
-                "mkdocs"], # Used to create HTML versions of the markdown docs in the docs directory
+                "mkdocs",  # Used to create HTML versions of the markdown docs in the docs directory
+                "mkdocs-material"], 
 
     },
     classifiers = [
