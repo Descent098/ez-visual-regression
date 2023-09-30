@@ -1,16 +1,28 @@
-# ez-visual-regression
+# ez_visual_regression
 
 *Used to take screenshots with selenium (pages or elements) and compare to baseline*
 
-## What does ez-visual-regression do?
+## What does ez_visual_regression do?
 
-*Provide a brief exposition on what the purpose of your package is, or change this heading to goals (like [sdu](https://github.com/Descent098/sdu#goals))*
+`ez_visual_regression` is a library for helping do visual regression testing. This is a fancy name for taking a screenshot of a known-good version of your app, then every time you make changes you can compare your current app to those screenshots to make sure things don't break.
+
+![](docs/images/comparison.png)
+
+(larger images here ![](https://raw.githubusercontent.com/Descent098/ez-visual-regression/master/docs/images/example))
+
+For example `baseline` here is the "correct" version, we accidentally removed the pricing table in `current`, and we can see the difference in `diff` (and in higher contrast in `thresh`). This process is typically quite annoying and needs custom code. `ez_visual_regression` makes this much easier, and integrates natively with selenium, along with nice features (like ignoring elements).
 
 ## Features & Roadmap
 
-*Include a bullet point list of implemented features, and either a link to the github planning board or list of coming-soon features*
+On top of the standard
 
-## Why should I use ez_img_diff?
+- Element ignoring; Using [query selectors (CSS Selectors)](https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_selectors) you can select elements who's changes you want to ignore (i.e. hero's with changing images, or the text for commonly changing elements)
+- Full page **or** element based; Allows you to decide if you want to make your tests by full page, or by element
+- Warning and error thresholds; If you don't want to raise complete red flags you can set error thresholds to say if there "might" be a problem. This logs to `stderr`, which means you can be more liberal with your measurements without full pipeline failures
+- Plug-n-play api; The API takes in any [non-headless (standard)](https://en.wikipedia.org/wiki/Headless_browser#:~:text=A%20headless%20browser%20is%20a,interface%20or%20using%20network%20communication.) webdriver. This means you can do **any selenium configuration** you want on the driver and then pass it into the api. It does no more and no less than what each of the functions say.
+- Configuration based testing; You can always use the API if you want a code-based approach, or you can setup a config file and run from the cli
+
+## Why should I use ez_visual_regression?
 
 There are a ton of great and more robust tools out there for this analysis, or for visual regression testing, but I found each of them had their own problems, here's a list:
 
@@ -23,6 +35,8 @@ There are a ton of great and more robust tools out there for this analysis, or f
 |[hermione](https://github.com/gemini-testing/hermione)|Could not use javascript/nodeJS for my use case|
 |[specter](https://github.com/letsgetrandy/specter)|Could not use javascript/nodeJS for my use case|
 |[Cypress-image-screenshot](https://github.com/jaredpalmer/cypress-image-snapshot)|Could not use javascript/nodeJS for my use case|
+
+So I build ez_visual_regression to fill in the gaps I saw in the available solutions. Namely being plug-n-play with any selenium driver to do whatever configurations I need!
 
 ## Who is ez-visual-regression for?
 

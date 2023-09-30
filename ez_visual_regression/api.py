@@ -100,7 +100,7 @@ def get_screenshot(driver:WebDriver, url:str, filename:str, locator:Union[str, N
     else: # Screenshot page
         driver.save_screenshot(filename)
 
-def assert_image_similarity_to_baseline(driver:WebDriver, url:str, folder:str, locator:Union[str, None]=None, by:By=By.ID, warning_threshold:float=10, error_threshold:float=30, ignored_elements: List[str]= None):
+def assert_image_similarity_to_baseline(driver:WebDriver, url:str, folder:str, locator:Union[str, None]=None, by:By=By.ID, warning_threshold:float=10, error_threshold:float=30, ignored_elements: List[str]= None) -> float:
     """Asserts the current screenshot of a page is similar to `<folder>/baseline.png` within: 0 < diff < error_threshold
 
     Parameters
