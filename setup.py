@@ -5,6 +5,7 @@ from ez_visual_regression import __version__
 def get_content(*filename:str) -> str:
     """ Gets the content of a file or files and returns
     it/them as a string
+
     Parameters
     ----------
     filename : (str)

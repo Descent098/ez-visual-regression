@@ -25,9 +25,9 @@ Here's the basic code:
 
 ```python
 # Setup driver
-from ez_visual_regression.api import get_installed_driver, instantiate_driver
+from ez_visual_regression.api import instantiate_driver
 
-driver_name = get_installed_driver()
+driver_name = "chrome"
 driver = instantiate_driver(driver_name)
 
 from ez_visual_regression.api import assert_image_similarity_to_baseline
@@ -49,7 +49,7 @@ from ez_visual_regression.api import assert_image_similarity_to_baseline, get_in
 URL = "https://canadiancoding.ca"
 folder = "results"
 
-driver_name = get_installed_driver()
+driver_name = "chrome"
 driver = instantiate_driver(driver_name)
 
 # Creates baseline if one isn't available
@@ -75,9 +75,9 @@ To test an individual element you just need to specify a `locator` parameter (ne
 
 ```python
 # Setup driver
-from ez_visual_regression.api import get_installed_driver, instantiate_driver
+from ez_visual_regression.api import instantiate_driver
 
-driver_name = get_installed_driver()
+driver_name = "chrome"
 driver = instantiate_driver(driver_name)
 
 from ez_visual_regression.api import assert_image_similarity_to_baseline
@@ -97,9 +97,9 @@ To test multiple elements you just need to specify a `locator` parameter (needs 
 
 ```python
 # Setup driver
-from ez_visual_regression.api import get_installed_driver, instantiate_driver
+from ez_visual_regression.api import instantiate_driver
 
-driver_name = get_installed_driver()
+driver_name = "chrome"
 driver = instantiate_driver(driver_name)
 
 from ez_visual_regression.api import assert_image_similarity_to_baseline

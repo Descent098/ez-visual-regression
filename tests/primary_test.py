@@ -5,6 +5,7 @@ from selenium.webdriver.remote.webdriver import WebDriver
 
 ## Regression testing
 from ez_visual_regression.api import *
+from ez_visual_regression.configuration import *
 
 def setup_driver() -> WebDriver:
     if os.getenv("GITHUB_ACTIONS") == "true": # Give headless chrome head ;)
@@ -86,7 +87,7 @@ def test_element_diff():
     finally:
         driver.close()
 
-def test_full_page_diff(): # TODO
+def test_full_page_diff():
     driver = setup_driver()
 
     examples_folder = os.path.join(os.path.dirname(__file__), "example_sites")
@@ -143,4 +144,40 @@ def test_full_page_diff(): # TODO
         os.remove(os.path.join(large_difference_folder, "thresh.png"))
     finally:
         driver.close()
+    
+def test_config():
+    examples_folder = os.path.join(os.path.dirname(__file__), "example_sites")
+    config = parse_config(os.path.join(examples_folder,"config.yml"))
+
+    test = config["tests"][0]
+    url,folder,locator,warning_threshold,error_threshold,ignored_elements,multielements = test
+
+    assert url == "tests/example_sites/no_difference/index.html"
+    assert folder == "nav"
+    assert locator == "#myChart"
+    assert warning_threshold == 10
+    assert error_threshold == 30
+    assert ignored_elements == [".hero"]
+    assert multielements == False
+
+    screenshots = config["screenshots"][0]
+    url,filename,locator, ignored_elements = screenshots
+    
+    assert url == "tests/example_sites/no_difference/index.html"
+    assert filename == os.path.join("chart","screenshot.png")
+    assert locator == "#myChart"
+    assert ignored_elements == [".hero"]
+    try:
+        execute_config(config)
+    finally:
+        os.remove(filename)
+        os.rmdir("chart")
+        os.remove(os.path.join("nav", "baseline.png"))
+        os.remove(os.path.join("nav", "diff.png"))
+        os.remove(os.path.join("nav", "thresh.png"))
+        os.remove(os.path.join("nav", "current.png"))
+        os.rmdir("nav")
+
+    
+
     

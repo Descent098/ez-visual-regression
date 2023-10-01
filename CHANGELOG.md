@@ -1,19 +1,15 @@
 # Changelog
 
-Include information about your changes as you release 
+## V0.1.0; Oct 1 2023
 
-## Version number; Date
-
-Description of release goals.
+Initial release
 
 ### Features
 
-...
-
-### Bug fixes
-
-...
-
-### Documentation improvements
-
-...
+- Ability to do visual regression
+  - Single element, full page, and multiple element modes
+  - Abilty to hide certain elements
+  - Can set thresholds to error **or** warn
+- Ability to invoke test programatically with an API
+- Ability to invoke test declaritively with a CLI
+- Ability to do simple screenshots in an API and CLI

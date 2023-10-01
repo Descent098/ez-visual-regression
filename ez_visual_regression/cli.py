@@ -40,7 +40,7 @@ def main():
         execute_config(config)
 
     elif args["screenshot"]:
-        driver_name = get_installed_driver()
+        driver_name = "chrome"
         driver = instantiate_driver(driver_name)
         # Preprocess arguments
         if not args["--folder"]:
@@ -48,7 +48,7 @@ def main():
         get_screenshot(driver, args["<url>"],os.path.join(args["--folder"], "screenshot.png"), args["--locator"], args["--ignore"])
         print(f"Screenshot saved to {os.path.join(args['--folder'], 'screenshot.png')}")
     elif args["test"]:
-        driver_name = get_installed_driver()
+        driver_name = "chrome"
         driver = instantiate_driver(driver_name)
         # Preprocess arguments
         if not args["--folder"]:

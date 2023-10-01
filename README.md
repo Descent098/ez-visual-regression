@@ -2,15 +2,6 @@
 
 *Used to take screenshots with selenium (pages or elements) and compare to baseline*
 
-## TODO
-
-- [ ] CLI
-  - [ ] Configuration mode
-  - [x] Normal modes
-- [ ] User documentation
-- [ ] Changelog
-- [ ] Test all examples
-
 ## Table of contents
 - [What does ez\_visual\_regression do?](#what-does-ez_visual_regression-do)
 - [Feature Overview](#feature-overview)
@@ -91,12 +82,12 @@ chrome_options.add_argument("--no-sandbox")
 driver = webdriver.Chrome(options=chrome_options, service=ChromeService(ChromeDriverManager().install()))
 ```
 
-Two included methods shorten this, and will detect which browser you have installed to use:
+There is an included method to shorten this:
 
 ```python
-from ez_visual_regression.api import get_installed_driver, instantiate_driver
+from ez_visual_regression.api import instantiate_driver
 
-driver_name = get_installed_driver()
+driver_name = "chrome" # Can be "chrome", "edge", or "firefox"
 driver = instantiate_driver(driver_name)
 ```
 
@@ -106,9 +97,9 @@ Which is what I will use from here on out, but you can use any method to instant
 
 ```python
 # Setup driver
-from ez_visual_regression.api import get_installed_driver, instantiate_driver
+from ez_visual_regression.api import instantiate_driver
 
-driver_name = get_installed_driver()
+driver_name = "chrome"
 driver = instantiate_driver(driver_name)
 
 # import functions needed for testing
@@ -126,9 +117,9 @@ assert_image_similarity_to_baseline(driver,url, locator=locator, folder=folder)
 
 ```python
 # Setup driver
-from ez_visual_regression.api import get_installed_driver, instantiate_driver
+from ez_visual_regression.api import instantiate_driver
 
-driver_name = get_installed_driver()
+driver_name = "chrome"
 driver = instantiate_driver(driver_name)
 
 # import functions needed for testing
@@ -148,9 +139,9 @@ except AssertionError:
 
 ```python
 # Setup driver
-from ez_visual_regression.api import get_installed_driver, instantiate_driver
+from ez_visual_regression.api import instantiate_driver
 
-driver_name = get_installed_driver()
+driver_name = "chrome"
 driver = instantiate_driver(driver_name)
 
 # import functions needed for testing

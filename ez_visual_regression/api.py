@@ -71,7 +71,7 @@ def get_screenshot(driver:WebDriver, url:str, filename:str, locator:Union[str, N
     URL = "https://canadiancoding.ca"
     filename = "screenshot.png"
 
-    driver_name = get_installed_driver()
+    driver_name = "chrome"
     driver = instantiate_driver(driver_name)
 
     get_screenshot(driver, URL, filename=filename)
@@ -85,7 +85,7 @@ def get_screenshot(driver:WebDriver, url:str, filename:str, locator:Union[str, N
     URL = "https://canadiancoding.ca"
     filename = "screenshot.png"
 
-    driver_name = get_installed_driver()
+    driver_name = "chrome"
     driver = instantiate_driver(driver_name)
     locator = "#myChart"
 
@@ -100,7 +100,7 @@ def get_screenshot(driver:WebDriver, url:str, filename:str, locator:Union[str, N
     URL = "https://canadiancoding.ca"
     filename = "screenshot.png"
 
-    driver_name = get_installed_driver()
+    driver_name = "chrome"
     driver = instantiate_driver(driver_name)
     ignored_elements = ["nav", ".card"]
 
@@ -116,9 +116,11 @@ def get_screenshot(driver:WebDriver, url:str, filename:str, locator:Union[str, N
             url = f"file:///{abs_fp}"
         else:
             url = "http://" + url
-    print(f"getting {url=}")
-
+    if not os.path.exists(os.path.dirname(filename)):
+        os.mkdir(os.path.dirname(filename))
+    print(f"{filename=} {locator=}")
     driver.get(url)
+
     
     # Wait for page to load and run all animations
     time.sleep(3) # TODO: Be better
@@ -177,14 +179,13 @@ def compare_multiple_elements(driver:WebDriver, url:str, folder:str, locator:str
     --------
     ### Compare multiple elements
     ```
-    from ez_visual_regression.api import compare_multiple_elements, get_installed_driver, instantiate_driver
+    from ez_visual_regression.api import compare_multiple_elements,instantiate_driver
 
     # Configuration variables
     URL = "https://canadiancoding.ca"
     folder = "canadiancoding"
 
-    driver_name = get_installed_driver()
-    driver = instantiate_driver(driver_name)
+    driver = instantiate_driver("chrome")
     locator = ".nav-item p"
     
     compare_multiple_elements(driver, URL,folder, locator) # Returns (assuming 3 total elements): [0.1, 19.8, 0.4]
@@ -192,14 +193,13 @@ def compare_multiple_elements(driver:WebDriver, url:str, folder:str, locator:str
     
     ### Compare multiple elements while ignoring divs and the red class
     ```
-    from ez_visual_regression.api import compare_multiple_elements, get_installed_driver, instantiate_driver
+    from ez_visual_regression.api import compare_multiple_elements,nstantiate_driver
 
     # Configuration variables
     URL = "https://canadiancoding.ca"
     folder = "canadiancoding"
 
-    driver_name = get_installed_driver()
-    driver = instantiate_driver(driver_name)
+    driver = instantiate_driver("chrome")
     locator = ".nav-item p"
     ignored_elements= ["div", ".red"]
 
@@ -291,9 +291,9 @@ def assert_image_similarity_to_baseline(driver:WebDriver, url:str, folder:str, l
     ### Create baseline images for a webpage
     ```
     # Setup driver
-    from ez_visual_regression.api import get_installed_driver, instantiate_driver
+    from ez_visual_regression.api import instantiate_driver
 
-    driver_name = get_installed_driver()
+    driver_name = "chrome"
     driver = instantiate_driver(driver_name)
 
     # import functions needed for testing
@@ -310,9 +310,9 @@ def assert_image_similarity_to_baseline(driver:WebDriver, url:str, folder:str, l
     ### Test against baseline image
     ```
     # Setup driver
-    from ez_visual_regression.api import get_installed_driver, instantiate_driver
+    from ez_visual_regression.api import instantiate_driver
 
-    driver_name = get_installed_driver()
+    driver_name = "chrome"
     driver = instantiate_driver(driver_name)
 
     # import functions needed for testing
@@ -331,9 +331,9 @@ def assert_image_similarity_to_baseline(driver:WebDriver, url:str, folder:str, l
     ### Take screenshot of whole page while ignoring h2's and elements with id of myChart
     ```
     # Setup driver
-    from ez_visual_regression.api import get_installed_driver, instantiate_driver
+    from ez_visual_regression.api import instantiate_driver
 
-    driver_name = get_installed_driver()
+    driver_name = "chrome"
     driver = instantiate_driver(driver_name)
     
     # import functions needed for testing
@@ -348,14 +348,13 @@ def assert_image_similarity_to_baseline(driver:WebDriver, url:str, folder:str, l
     
     ### Take screenshot of all nav elements (not just 1) on a page
     ```
-    from ez_visual_regression.api import compare_multiple_elements, get_installed_driver, instantiate_driver
+    from ez_visual_regression.api import compare_multiple_elements, instantiate_driver
 
     # Configuration variables
     URL = "https://canadiancoding.ca"
     folder = "canadiancoding"
 
-    driver_name = get_installed_driver()
-    driver = instantiate_driver(driver_name)
+    driver = instantiate_driver("chrome")
     locator = ".nav-item p"
     ignored_elements= ["div", ".red"]
 
@@ -384,58 +383,6 @@ def assert_image_similarity_to_baseline(driver:WebDriver, url:str, folder:str, l
             logging.warning(f"Difference {diff} is over warning threshold {error_threshold}")
             
         return diff
-
-def get_installed_driver(driver:str =None) -> str:
-    """Gets an installed driver
-
-    Parameters
-    ----------
-    driver : str, optional
-        The driver you're looking for, if not specified will find any option installed, by default None
-
-    Returns
-    -------
-    str
-        The driver that exists
-
-    Raises
-    ------
-    ValueError
-        Thrown if a selected driver does not exist
-    webbrowser.Error
-        Thrown if NO driver exists
-        
-    Examples
-    --------
-    ### Get a string of an installed browser that is supported
-    ```
-    from ez_visual_regression.api import get_installed_driver
-
-    get_installed_driver() # Either "chrome", "firefox","edge" or raises webbrowser.Error
-    ```
-    
-    ### Check if person has chrome installed
-    ```
-    from ez_visual_regression.api import get_installed_driver
-
-    get_installed_driver("chrome") # Either "chrome" or raises webbrowser.Error
-    ```
-    """
-    drivers = ["chrome", "firefox","edge",]
-    if driver: # Confirm driver exists and is usable
-        driver = driver.lower().strip()
-        if not driver in drivers:
-            raise ValueError(f"Selected driver {driver} is not available")
-        webbrowser.get(driver)
-        raise webbrowser.Error("driver not available")
-
-    for browser in drivers: # No driver specified, just find first installed one
-        try: 
-            webbrowser.get(driver)
-            return browser
-        except webbrowser.Error:
-            continue
-    raise webbrowser.Error(f"Could not find suitable browser please install one of: {drivers}")
     
 def instantiate_driver(driver:str) -> WebDriver:
     """Creates a webdriver based on a driver name
@@ -459,15 +406,15 @@ def instantiate_driver(driver:str) -> WebDriver:
     --------
     ### Get any supported browser, and instantiate it
     ```
-    from ez_visual_regression.api import get_installed_driver, instantiate_driver
+    from ez_visual_regression.api import instantiate_driver
 
-    driver_name = get_installed_driver() # Either "chrome", "firefox","edge" or raises webbrowser.Error
+    driver_name = "chrome" # Either "chrome", "firefox","edge" or raises webbrowser.Error
     instantiate_driver(driver_name) # Returns a WebDriver of the correct browser type
     ```
     
     ### Check if person has chrome installed
     ```
-    from ez_visual_regression.api import get_installed_driver, instantiate_driver
+    from ez_visual_regression.api import instantiate_driver
 
     get_installed_driver("chrome") # Either "chrome" or raises webbrowser.Error
     instantiate_driver(driver_name) # Returns a Chrome.WebDriver
