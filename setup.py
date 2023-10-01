@@ -40,16 +40,9 @@ setuptools.setup(
     },
     include_package_data = True,
     packages = setuptools.find_packages(),
-
-    # The code below is used to define entrypoints, if you don't know what this is then:
-    # SEE: https://canadiancoding.ca/posts/post/python/script-entrypoints/
-
-    
-    # entry_points = { 
-    #        'console_scripts': ['... = ...']
-    #    },
-    
-
+    entry_points = { 
+           'console_scripts': ['ezvr = ez_visual_regression.cli:main']
+       },
     install_requires = [
     "docopt",
     "ez_img_diff",
@@ -61,12 +54,17 @@ setuptools.setup(
         "dev" : ["nox",    # Used to run automated processes
                 "pytest",  # Used to run the test code in the tests directory
                 "mkdocs",  # Used to create HTML versions of the markdown docs in the docs directory
-                "mkdocs-material"], 
+                "mkdocs-material",
+                ], 
+        "CI": [
+            "pytest",  # Used to run the test code in the tests directory
+            "pyvirtualdisplay"
+        ]
 
     },
     classifiers = [
         "Programming Language :: Python :: 3",
         "Operating System :: OS Independent",
-        "Development Status :: 1 - Planning" # TODO: Change this when you have created package, SEE: https://pypi.org/classifiers/
+        "Development Status :: 4 - Beta"
     ],
 )

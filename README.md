@@ -2,19 +2,43 @@
 
 *Used to take screenshots with selenium (pages or elements) and compare to baseline*
 
+## TODO
+
+- [ ] CLI
+  - [ ] Configuration mode
+  - [x] Normal modes
+- [ ] User documentation
+- [ ] Changelog
+- [ ] Test all examples
+
+## Table of contents
+- [What does ez\_visual\_regression do?](#what-does-ez_visual_regression-do)
+- [Feature Overview](#feature-overview)
+- [Why should I use ez\_visual\_regression?](#why-should-i-use-ez_visual_regression)
+- [Quick-start](#quick-start)
+- [Installation](#installation)
+    - [From source](#from-source)
+    - [From PyPi](#from-pypi)
+    - [Examples](#examples)
+    - [Create baseline images for testing an element](#create-baseline-images-for-testing-an-element)
+    - [Test against baseline image for an element](#test-against-baseline-image-for-an-element)
+    - [Test a whole page while ignoring h2's and elements with id of myChart](#test-a-whole-page-while-ignoring-h2s-and-elements-with-id-of-mychart)
+- [Additional Documentation](#additional-documentation)
+
+
 ## What does ez_visual_regression do?
 
 `ez_visual_regression` is a library for helping do visual regression testing. This is a fancy name for taking a screenshot of a known-good version of your app, then every time you make changes you can compare your current app to those screenshots to make sure things don't break.
 
 ![](docs/images/comparison.png)
 
-(larger images here ![](https://raw.githubusercontent.com/Descent098/ez-visual-regression/master/docs/images/example))
+(larger images here ![](https://github.com/Descent098/ez-visual-regression/tree/master/docs/images/example))
 
 For example `baseline` here is the "correct" version, we accidentally removed the pricing table in `current`, and we can see the difference in `diff` (and in higher contrast in `thresh`). This process is typically quite annoying and needs custom code. `ez_visual_regression` makes this much easier, and integrates natively with selenium, along with nice features (like ignoring elements).
 
-## Features & Roadmap
+## Feature overview
 
-On top of the standard
+On top of just normal visual regression ez_visual_regression supports:
 
 - Element ignoring; Using [query selectors (CSS Selectors)](https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_selectors) you can select elements who's changes you want to ignore (i.e. hero's with changing images, or the text for commonly changing elements)
 - Full page **or** element based; Allows you to decide if you want to make your tests by full page, or by element
@@ -38,13 +62,7 @@ There are a ton of great and more robust tools out there for this analysis, or f
 
 So I build ez_visual_regression to fill in the gaps I saw in the available solutions. Namely being plug-n-play with any selenium driver to do whatever configurations I need!
 
-## Who is ez-visual-regression for?
-
-*If your package has multiple uses in seperate domains it may be worth explaning use cases in different domains; see [ahd](https://github.com/Descent098/ahd#who-is-ahd-for) for example*
-
 ## Quick-start
-
-*Include how people can get started using your project in the shortest time possible*
 
 ### Installation
 
@@ -59,16 +77,95 @@ So I build ez_visual_regression to fill in the gaps I saw in the available solut
 
 #### Examples
 
-*Include an example or two of usage, or common use cases*
+Normally instantiating a browser takes a few steps, for example:
 
-## Usage
+```python
+from selenium import webdriver                                         # Instantiates a browser
+from selenium.webdriver.chrome.options import Options                  # Allows webdriver config
+from webdriver_manager.chrome import ChromeDriverManager               # Manages webdriver install
+from selenium.webdriver.chrome.service import Service as ChromeService # Helps instantiate browser
 
-*Include how to use your package as an API (if that's what you're going for)*
+chrome_options = Options()
+chrome_options.add_argument("--disable-gpu")
+chrome_options.add_argument("--no-sandbox")
+driver = webdriver.Chrome(options=chrome_options, service=ChromeService(ChromeDriverManager().install()))
+```
 
-### Arguments
+Two included methods shorten this, and will detect which browser you have installed to use:
 
-*If you are writing a script, include some helpful/often used arguments here. If you decide to use [docopt](http://docopt.org/) the usage string should do.* 
+```python
+from ez_visual_regression.api import get_installed_driver, instantiate_driver
+
+driver_name = get_installed_driver()
+driver = instantiate_driver(driver_name)
+```
+
+Which is what I will use from here on out, but you can use any method to instantiate a driver and pass it to the functions
+
+##### Create baseline images for testing an element
+
+```python
+# Setup driver
+from ez_visual_regression.api import get_installed_driver, instantiate_driver
+
+driver_name = get_installed_driver()
+driver = instantiate_driver(driver_name)
+
+# import functions needed for testing
+from ez_visual_regression.api import assert_image_similarity_to_baseline
+
+url = "tests/example_sites/no_difference/index.html" # File in this case
+folder = "tests/example_sites/no_difference" # Where to store output images
+locator = "#myChart" # The queryselector to find an element with
+
+# Creates baseline if one isn't available
+assert_image_similarity_to_baseline(driver,url, locator=locator, folder=folder)
+```
+
+##### Test against baseline image for an element
+
+```python
+# Setup driver
+from ez_visual_regression.api import get_installed_driver, instantiate_driver
+
+driver_name = get_installed_driver()
+driver = instantiate_driver(driver_name)
+
+# import functions needed for testing
+from ez_visual_regression.api import assert_image_similarity_to_baseline
+
+url = "tests/example_sites/no_difference/index.html" # File in this case
+folder = "tests/example_sites/no_difference" # Where to store output images
+locator = "#myChart" # The queryselector to find an element with
+
+try:
+    assert_image_similarity_to_baseline(driver,url, locator=locator, folder=folder )
+except AssertionError:
+    print("Image too far from baseline!")
+```
+
+##### Test a whole page while ignoring h2's and elements with id of myChart
+
+```python
+# Setup driver
+from ez_visual_regression.api import get_installed_driver, instantiate_driver
+
+driver_name = get_installed_driver()
+driver = instantiate_driver(driver_name)
+
+# import functions needed for testing
+from ez_visual_regression.api import assert_image_similarity_to_baseline
+
+url = "tests/example_sites/no_difference/index.html" # File in this case
+folder = "tests/example_sites/no_difference" # Where to store output images
+ignored_elements = ["h2", "#myChart"] # Queryselector for elements to ignore
+
+assert_image_similarity_to_baseline(driver, url, folder=folder, ignored_elements=ignored_elements)
+```
 
 ## Additional Documentation
 
-*If you have any supplementary documentation elsewhere (i.e. https://readthedocs.org/) include references to it here.*
+For more details check out our:
+
+- [User Documentation](https://ez-visual-regression.readthedocs.io/en/latest/)
+- [API Documentation](https://kieranwood.ca/ez_visual_regression)
