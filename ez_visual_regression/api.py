@@ -2,6 +2,7 @@
 import os                                                              # Path verification & modification
 import time                                                            # Allows for pauses
 import logging                                                         # Enables logging
+import webbrowser
 from typing import Union, List
 
 # Third Party Dependencies
@@ -9,12 +10,24 @@ from typing import Union, List
 from ez_img_diff.api import compare_images
 
 ## Browser automation
+from selenium import webdriver                                         # Instantiates a browser
 from selenium.webdriver.common.by import By                            # Specify find_element type
-from selenium.webdriver.remote.webdriver import WebDriver              # Used for type hintingc
+from selenium.webdriver.chrome.options import Options                  # Allows webdriver config
+from selenium.webdriver.remote.webdriver import WebDriver              # Used for type hinting
 from selenium.common.exceptions import NoSuchElementException          # Allows for error catching
 
+### Used to manage driver installation
+from webdriver_manager.chrome import ChromeDriverManager
+from webdriver_manager.firefox import GeckoDriverManager
+from webdriver_manager.microsoft import EdgeChromiumDriverManager
 
-def get_screenshot(driver:WebDriver, url:str, filename:str, locator:Union[str, None]=None, by:By=By.ID, ignored_elements: List[str]= None):
+### Services needed for instantiating browsers
+from selenium.webdriver.chrome.service import Service as ChromeService # Helps instantiate browser
+from selenium.webdriver.edge.service import Service as EdgeService     # Helps instantiate browser
+from selenium.webdriver.firefox.service import Service as FirefoxService
+
+
+def get_screenshot(driver:WebDriver, url:str, filename:str, locator:Union[str, None]=None, ignored_elements: List[str]= None):
     """Takes a screenshot of a page or element
 
     Parameters
@@ -29,10 +42,7 @@ def get_screenshot(driver:WebDriver, url:str, filename:str, locator:Union[str, N
         The file to export the screenshot to, by default None
 
     locator : Union[str, None], optional
-        The locator to search with (i.e. element ID, class, xpath etc.), by default None
-
-    by : By, optional
-        Define how to use the locator to find an element, by default By.ID
+        The CSS selector to search the element with (i.e. #myChart, .rows etc.)
         
     ignored_elements: List[str], option
         Use a query selector to specify elements to ignore
@@ -53,29 +63,60 @@ def get_screenshot(driver:WebDriver, url:str, filename:str, locator:Union[str, N
         
     Examples
     --------
-    ### Create a screenshot with no comparisson (fancy alias for driver.save_screenshot() or element.screenshot())
+    ### Create a screenshot of full page
     ```
-    from ez_visual_regression import get_screenshot
-    chrome_options = Options()
-    chrome_options.add_argument("--disable-gpu")
-    chrome_options.add_argument("--no-sandbox")
-    driver = webdriver.Chrome(options=chrome_options, service=ChromeService(ChromeDriverManager().install()))
+    from ez_visual_regression.api import get_screenshot, get_installed_driver, instantiate_driver
 
-    test_from_config(driver)
+    # Configuration variables
+    URL = "https://canadiancoding.ca"
+    filename = "screenshot.png"
+
+    driver_name = get_installed_driver()
+    driver = instantiate_driver(driver_name)
+
+    get_screenshot(driver, URL, filename=filename)
+    ```
     
-    get_screenshot(driver,"../tests/examples/v1/index.html", locator="myChart", filename="images/chart-v1.png" )
-    get_screenshot(driver,"../tests/examples/v2/index.html", locator="myChart", filename="images/chart-v2.png" )
+    ### Create a screenshot of an element
+    ```
+    from ez_visual_regression.api import get_screenshot, get_installed_driver, instantiate_driver
+
+    # Configuration variables
+    URL = "https://canadiancoding.ca"
+    filename = "screenshot.png"
+
+    driver_name = get_installed_driver()
+    driver = instantiate_driver(driver_name)
+    locator = "#myChart"
+
+    get_screenshot(driver, URL, filename=filename, locator=locator)
+    ```
+    
+    ### Create a screenshot of full page while ignoring elements with the card class and nav element(s)
+    ```
+    from ez_visual_regression.api import get_screenshot, get_installed_driver, instantiate_driver
+
+    # Configuration variables
+    URL = "https://canadiancoding.ca"
+    filename = "screenshot.png"
+
+    driver_name = get_installed_driver()
+    driver = instantiate_driver(driver_name)
+    ignored_elements = ["nav", ".card"]
+
+    get_screenshot(driver, URL, filename=filename, ignored_elements=ignored_elements)
     ```
     """
     if not url.startswith("http"):
-        if url.endswith(".html") and not url.startswith("file://"): # Assume file path
+        if (url.endswith(".html") or url.endswith(".pdf")) and not url.startswith("file:///"): # Assume file path
             logging.debug("URL provided does not have protocol, defaulting to file")
             abs_fp = os.path.abspath(url).replace("\\","/")
             if not os.path.exists(abs_fp):
                 raise FileNotFoundError(f"File path {abs_fp} does not exist")
-            url = f'file://{abs_fp}'
+            url = f"file:///{abs_fp}"
         else:
             url = "http://" + url
+    print(f"getting {url=}")
 
     driver.get(url)
     
@@ -85,22 +126,128 @@ def get_screenshot(driver:WebDriver, url:str, filename:str, locator:Union[str, N
         for selector in ignored_elements:
             driver.execute_script(f'document.querySelectorAll("{selector}").forEach((el)=>{{el.style.opacity=0}})')
     if locator: # Screenshot element
-        if by == By.ID:
-            try:
-                driver.find_element(by, locator).screenshot(filename)
-            except NoSuchElementException:
-                logging.error(f"\033[0;31m Element does not exist when looking for an {by} with {locator} confirm spelling and capitalization\033[1;37m")
-                exit(1)
-        else:
-            try:
-                driver.find_elements(by, locator)[0].screenshot(filename)
-            except NoSuchElementException:
-                logging.error(f"\033[0;m Element does not exist when looking for a {by} with {locator} confirm spelling and capitalization\033[1;37m")
-                exit(1)
+        try:
+            driver.find_elements(By.CSS_SELECTOR, locator)[0].screenshot(filename)
+        except NoSuchElementException:
+            logging.error(f"\033[0;m Element does not exist when looking for css selector: {locator} confirm spelling and capitalization\033[1;37m")
+            exit(1)
     else: # Screenshot page
         driver.save_screenshot(filename)
 
-def assert_image_similarity_to_baseline(driver:WebDriver, url:str, folder:str, locator:Union[str, None]=None, by:By=By.ID, warning_threshold:float=10, error_threshold:float=30, ignored_elements: List[str]= None) -> float:
+def compare_multiple_elements(driver:WebDriver, url:str, folder:str, locator:str, ignored_elements: List[str]= None) -> List[float]:
+    """Regression test multiple elements
+
+    Parameters
+    ----------
+    driver : WebDriver
+        The browser to use for capturing screenshots
+
+    url : str
+        The URl you want to get a screenshot from (or filepath)
+
+    folder : str
+        The folder to export the screenshots to
+
+    locator : str
+        The CSS selector to search the element with (i.e. #myChart, .rows etc.)
+        
+    ignored_elements: List[str], option
+        Use a query selector to specify elements to ignore
+
+    Notes
+    -----
+    - If locator is not specified a full page screenshot is used
+    
+    
+    References
+    ----------
+    - How to use by if you've never seen it https://selenium-python.readthedocs.io/locating-elements.html
+    
+    Raises
+    ------
+    FileNotFoundError
+        If the URL is a file path and it does not exist
+    
+    Returns
+    -------
+    List[float]:
+        The differences of each found element
+    
+    Examples
+    --------
+    ### Compare multiple elements
+    ```
+    from ez_visual_regression.api import compare_multiple_elements, get_installed_driver, instantiate_driver
+
+    # Configuration variables
+    URL = "https://canadiancoding.ca"
+    folder = "canadiancoding"
+
+    driver_name = get_installed_driver()
+    driver = instantiate_driver(driver_name)
+    locator = ".nav-item p"
+    
+    compare_multiple_elements(driver, URL,folder, locator) # Returns (assuming 3 total elements): [0.1, 19.8, 0.4]
+    ```
+    
+    ### Compare multiple elements while ignoring divs and the red class
+    ```
+    from ez_visual_regression.api import compare_multiple_elements, get_installed_driver, instantiate_driver
+
+    # Configuration variables
+    URL = "https://canadiancoding.ca"
+    folder = "canadiancoding"
+
+    driver_name = get_installed_driver()
+    driver = instantiate_driver(driver_name)
+    locator = ".nav-item p"
+    ignored_elements= ["div", ".red"]
+
+    compare_multiple_elements(driver, URL,folder, locator, ignored_elements) # Returns (assuming 3 total elements): [0.1, 0.0, 0.4]
+    ```
+    """
+    
+    if not url.startswith("http"):
+        if (url.endswith(".html") or url.endswith(".pdf")) and not url.startswith("file:///"): # Assume file path
+            logging.debug("URL provided does not have protocol, defaulting to file")
+            abs_fp = os.path.abspath(url).replace("\\","/")
+            if not os.path.exists(abs_fp):
+                raise FileNotFoundError(f"File path {abs_fp} does not exist")
+            url = f"file:///{abs_fp}"
+        else:
+            url = "http://" + url
+    if not os.path.isdir(folder):
+        os.mkdir(folder)
+    
+    driver.get(url)
+    
+    # Wait for page to load and run all animations
+    time.sleep(3) # TODO: Be better
+    if ignored_elements:
+        for selector in ignored_elements:
+            driver.execute_script(f'document.querySelectorAll("{selector}").forEach((el)=>{{el.style.opacity=0}})')
+
+    try:
+        elements = driver.find_elements(By.CSS_SELECTOR, locator)
+        baseline_images = [(os.path.join(folder,f"baseline-{index}.png"), element) for index, element in enumerate(elements)]
+        current_images = [element for element in elements]
+
+        diffs = []
+        
+        for path, element in baseline_images:
+            if not os.path.exists(path):
+                element.screenshot(path)
+                
+        for index,element in enumerate(current_images):
+            element.screenshot(os.path.join(folder,f"current-{index}.png"))
+            diffs.append(compare_images(os.path.join(folder,f"current-{index}.png"), os.path.join(folder,f"baseline-{index}.png"), os.path.join(folder,f"diff-{index}.png"),os.path.join(folder,f"thresh-{index}.png")))
+            
+    except NoSuchElementException:
+        logging.error(f"\033[0;m Element does not exist when looking for css selector: {locator} confirm spelling and capitalization\033[1;37m")
+        exit(1)
+    return diffs
+
+def assert_image_similarity_to_baseline(driver:WebDriver, url:str, folder:str, locator:Union[str, None]=None, warning_threshold:float=10, error_threshold:float=30, ignored_elements: List[str]= None, multielements:bool=False) -> Union[float, List[float]]:
     """Asserts the current screenshot of a page is similar to `<folder>/baseline.png` within: 0 < diff < error_threshold
 
     Parameters
@@ -115,10 +262,7 @@ def assert_image_similarity_to_baseline(driver:WebDriver, url:str, folder:str, l
         The folder to save the baseline, threshold, current and difference images to
 
     locator : Union[str, None], optional
-        The locator to search with (i.e. element ID, class, xpath etc.), by default None
-
-    by : By, optional
-        Define how to use the locator to find an element, by default By.ID
+        The CSS selector to search the element with (i.e. #myChart, .rows etc.)
 
     warning_threshold : float, optional
         The threshold at which there will be a logged warning, by default 10
@@ -128,6 +272,9 @@ def assert_image_similarity_to_baseline(driver:WebDriver, url:str, folder:str, l
     
     ignored_elements: List[str], option
         Use a query selector to specify elements to ignore
+        
+    multielements: bool, option
+        Whether to screenshot all occurances of a css selector (True), or just the firs occurance (False), default False
 
     Raises
     ------
@@ -136,78 +283,205 @@ def assert_image_similarity_to_baseline(driver:WebDriver, url:str, folder:str, l
         
     Returns
     -------
-    float:
-        The difference between the two images as a whole number percent (i.e. 1.313 is 1.313% or 15.928 is 15.928%)
+    Union[float, List[float]]:
+        The difference between the two images as a whole number percent (i.e. 1.313 is 1.313% or 15.928 is 15.928%), or list of floats if multielement is True
     
     Examples
     --------
     ### Create baseline images for a webpage
     ```
-    from selenium import webdriver                                         # Instantiates a browser
-    from selenium.webdriver.chrome.options import Options                  # Allows webdriver config
-    from webdriver_manager.chrome import ChromeDriverManager               # Manages webdriver install
-    from selenium.webdriver.chrome.service import Service as ChromeService # Helps instantiate browser
+    # Setup driver
+    from ez_visual_regression.api import get_installed_driver, instantiate_driver
 
+    driver_name = get_installed_driver()
+    driver = instantiate_driver(driver_name)
+
+    # import functions needed for testing
     from ez_visual_regression.api import assert_image_similarity_to_baseline
-    chrome_options = Options()
-    chrome_options.add_argument("--disable-gpu")
-    chrome_options.add_argument("--no-sandbox")
-    driver = webdriver.Chrome(options=chrome_options, service=ChromeService(ChromeDriverManager().install()))
+
+    url = "tests/example_sites/no_difference/index.html" # File in this case
+    folder = "tests/example_sites/no_difference" # Where to store output images
+    locator = "#myChart" # The queryselector to find an element with
 
     # Creates baseline if one isn't available
-    assert_image_similarity_to_baseline(driver,"tests/examples/v1/index.html", locator="myChart", folder="tests/examples/v1" )
+    assert_image_similarity_to_baseline(driver,url, locator=locator, folder=folder)
     ```
     
     ### Test against baseline image
     ```
-    from selenium import webdriver                                         # Instantiates a browser
-    from selenium.webdriver.chrome.options import Options                  # Allows webdriver config
-    from webdriver_manager.chrome import ChromeDriverManager               # Manages webdriver install
-    from selenium.webdriver.chrome.service import Service as ChromeService # Helps instantiate browser
+    # Setup driver
+    from ez_visual_regression.api import get_installed_driver, instantiate_driver
 
+    driver_name = get_installed_driver()
+    driver = instantiate_driver(driver_name)
+
+    # import functions needed for testing
     from ez_visual_regression.api import assert_image_similarity_to_baseline
-    chrome_options = Options()
-    chrome_options.add_argument("--disable-gpu")
-    chrome_options.add_argument("--no-sandbox")
-    driver = webdriver.Chrome(options=chrome_options, service=ChromeService(ChromeDriverManager().install()))
-    
+
+    url = "tests/example_sites/no_difference/index.html" # File in this case
+    folder = "tests/example_sites/no_difference" # Where to store output images
+    locator = "#myChart" # The queryselector to find an element with
+
     try:
-        assert_image_similarity_to_baseline(driver,"tests/examples/v1/index.html", locator="myChart", folder="tests/examples/v1" )
+        assert_image_similarity_to_baseline(driver,url, locator=locator, folder=folder )
     except AssertionError:
         print("Image too far from baseline!")
     ```
     
     ### Take screenshot of whole page while ignoring h2's and elements with id of myChart
     ```
-    from selenium import webdriver                                         # Instantiates a browser
-    from selenium.webdriver.chrome.options import Options                  # Allows webdriver config
-    from webdriver_manager.chrome import ChromeDriverManager               # Manages webdriver install
-    from selenium.webdriver.chrome.service import Service as ChromeService # Helps instantiate browser
+    # Setup driver
+    from ez_visual_regression.api import get_installed_driver, instantiate_driver
 
+    driver_name = get_installed_driver()
+    driver = instantiate_driver(driver_name)
+    
+    # import functions needed for testing
     from ez_visual_regression.api import assert_image_similarity_to_baseline
-    chrome_options = Options()
-    chrome_options.add_argument("--disable-gpu")
-    chrome_options.add_argument("--no-sandbox")
-    driver = webdriver.Chrome(options=chrome_options, service=ChromeService(ChromeDriverManager().install()))
 
-    assert_image_similarity_to_baseline(driver,"tests/example_sites/test/index.html", folder="tests/example_sites/test", ignored_elements=["h2", "#myChart"])
+    url = "tests/example_sites/no_difference/index.html" # File in this case
+    folder = "tests/example_sites/no_difference" # Where to store output images
+    ignored_elements = ["h2", "#myChart"]
+
+    assert_image_similarity_to_baseline(driver,url, folder=folder, ignored_elements=ignored_elements)
+    ```
+    
+    ### Take screenshot of all nav elements (not just 1) on a page
+    ```
+    from ez_visual_regression.api import compare_multiple_elements, get_installed_driver, instantiate_driver
+
+    # Configuration variables
+    URL = "https://canadiancoding.ca"
+    folder = "canadiancoding"
+
+    driver_name = get_installed_driver()
+    driver = instantiate_driver(driver_name)
+    locator = ".nav-item p"
+    ignored_elements= ["div", ".red"]
+
+    assert_image_similarity_to_baseline(driver, URL, folder, locator, ignored_elements=ignored_elements, multielements=True) # Returns (assuming 3 total elements): [0.1, 0.0, 0.4]
     ```
     """
     if not os.path.isdir(folder):
         print(f"No directory was found called {folder}, creating...")
         os.mkdir(folder)
-    if not os.path.exists(os.path.join(folder, "baseline.png")):
-        print(f"No baseline image was found called {os.path.join(folder, 'baseline.png')}, creating...")
-        get_screenshot(driver, url, os.path.join(folder, "baseline.png"), locator, by, ignored_elements)
+    if not os.path.exists(os.path.join(folder, "baseline.png")) and not multielements:
+        print(f"No baseline image(s) found in {os.path.join(folder, 'baseline.png')}, creating...")
+        get_screenshot(driver, url, os.path.join(folder, "baseline.png"), locator, ignored_elements)
 
-    get_screenshot(driver, url, os.path.join(folder, "current.png"), locator, by, ignored_elements)
+    if multielements:
+        diffs = compare_multiple_elements(driver, url, folder, locator, ignored_elements)
+        return diffs
+    else:
+        get_screenshot(driver, url, os.path.join(folder, "current.png"), locator, ignored_elements)
 
-    diff = compare_images(os.path.join(folder, "baseline.png"), os.path.join(folder, "current.png"), os.path.join(folder, "diff.png"), os.path.join(folder, "thresh.png"))
+        diff = compare_images(os.path.join(folder, "baseline.png"), os.path.join(folder, "current.png"), os.path.join(folder, "diff.png"), os.path.join(folder, "thresh.png"))
 
-    if diff > error_threshold:
-        logging.error(f"Difference {diff} is over error threshold {error_threshold}")
-        raise AssertionError(f"Difference {diff} is over error threshold {error_threshold}")
-    if error_threshold > diff > warning_threshold:
-        logging.warning(f"Difference {diff} is over warning threshold {error_threshold}")
+        if diff > error_threshold:
+            logging.error(f"Difference {diff} is over error threshold {error_threshold}")
+            raise AssertionError(f"Difference {diff} is over error threshold {error_threshold}")
+        if error_threshold > diff > warning_threshold:
+            logging.warning(f"Difference {diff} is over warning threshold {error_threshold}")
+            
+        return diff
+
+def get_installed_driver(driver:str =None) -> str:
+    """Gets an installed driver
+
+    Parameters
+    ----------
+    driver : str, optional
+        The driver you're looking for, if not specified will find any option installed, by default None
+
+    Returns
+    -------
+    str
+        The driver that exists
+
+    Raises
+    ------
+    ValueError
+        Thrown if a selected driver does not exist
+    webbrowser.Error
+        Thrown if NO driver exists
         
-    return diff
+    Examples
+    --------
+    ### Get a string of an installed browser that is supported
+    ```
+    from ez_visual_regression.api import get_installed_driver
+
+    get_installed_driver() # Either "chrome", "firefox","edge" or raises webbrowser.Error
+    ```
+    
+    ### Check if person has chrome installed
+    ```
+    from ez_visual_regression.api import get_installed_driver
+
+    get_installed_driver("chrome") # Either "chrome" or raises webbrowser.Error
+    ```
+    """
+    drivers = ["chrome", "firefox","edge",]
+    if driver: # Confirm driver exists and is usable
+        driver = driver.lower().strip()
+        if not driver in drivers:
+            raise ValueError(f"Selected driver {driver} is not available")
+        webbrowser.get(driver)
+        raise webbrowser.Error("driver not available")
+
+    for browser in drivers: # No driver specified, just find first installed one
+        try: 
+            webbrowser.get(driver)
+            return browser
+        except webbrowser.Error:
+            continue
+    raise webbrowser.Error(f"Could not find suitable browser please install one of: {drivers}")
+    
+def instantiate_driver(driver:str) -> WebDriver:
+    """Creates a webdriver based on a driver name
+
+    Parameters
+    ----------
+    driver : str
+        The name of the driver to use (can be "edge", "chrome" or "firefox")
+
+    Returns
+    -------
+    WebDriver
+        The webdriver for the specified browser
+
+    Raises
+    ------
+    ValueError
+        If the driver does not exist
+    
+    Examples
+    --------
+    ### Get any supported browser, and instantiate it
+    ```
+    from ez_visual_regression.api import get_installed_driver, instantiate_driver
+
+    driver_name = get_installed_driver() # Either "chrome", "firefox","edge" or raises webbrowser.Error
+    instantiate_driver(driver_name) # Returns a WebDriver of the correct browser type
+    ```
+    
+    ### Check if person has chrome installed
+    ```
+    from ez_visual_regression.api import get_installed_driver, instantiate_driver
+
+    get_installed_driver("chrome") # Either "chrome" or raises webbrowser.Error
+    instantiate_driver(driver_name) # Returns a Chrome.WebDriver
+    ```
+    """
+    if driver == "chrome":
+        chrome_options = Options()
+        chrome_options.add_argument("--disable-gpu")
+        chrome_options.add_argument("--no-sandbox")
+        return webdriver.Chrome(options=chrome_options, service=ChromeService(ChromeDriverManager().install()))
+    elif driver == "edge":
+        edge_options = Options()
+        return webdriver.Edge(options=edge_options, service=EdgeService(EdgeChromiumDriverManager().install()))
+    elif driver == "firefox":
+        return webdriver.Firefox(service=FirefoxService(GeckoDriverManager().install()))
+    else:
+        raise ValueError(f"Driver not supported {driver}")
