@@ -4,13 +4,12 @@ on: [push]
 
 jobs:
   test:
-    name: Test on Python ${{ matrix.python_version }} and ${{ matrix.os }}
-    runs-on: ${{ matrix.os }}
+    name: Test on Python ${{ matrix.python_version }} and ubuntu-latest
+    runs-on: ubuntu-latest
     strategy:
       fail-fast: False
       matrix:
-        python_version: ['3.7', '3.8']
-        os: [ubuntu-latest, windows-latest, macOS-latest]
+        python_version: ['3.9', '3.10',"3.11"]
     steps:
     - uses: actions/checkout@v2
     - name: Set up Python ${{ matrix.python_version }}
@@ -20,7 +19,13 @@ jobs:
     - name: Install dependencies
       run: |
         pip install .
-        pip install pytest
+        pip install .[ci]
+    - name: Installing package list
+      run: apt list --installed    
+    - name: Removing previous chrome instances on runner 
+      run: sudo apt purge google-chrome-stable  
+    - name: Install xvfb
+      run: sudo apt-get install xvfb
     - name: Test with pytest
       run: |
         pytest -vv
